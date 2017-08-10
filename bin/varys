@@ -1,0 +1,111 @@
+#! /bin/bash
+
+############################################################
+##
+##       ██╗   ██╗ █████╗ ██████╗ ██╗   ██╗███████╗
+##       ██║   ██║██╔══██╗██╔══██╗╚██╗ ██╔╝██╔════╝
+##       ██║   ██║███████║██████╔╝ ╚████╔╝ ███████╗
+##       ╚██╗ ██╔╝██╔══██║██╔══██╗  ╚██╔╝  ╚════██║
+##        ╚████╔╝ ██║  ██║██║  ██║   ██║   ███████║
+##         ╚═══╝  ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚══════╝
+##**********************************************************
+##  - Master of secrets
+############################################################
+
+ACTION="list_action"
+## Options
+##----------------------------------------------------------
+while [[ $# -gt 0 ]] ; do
+   key="$1"
+   case $key in
+         copy|list)
+         ACTION="${1}_action"
+       ;;
+##
+##     -s | --service
+##        Service Name to filter by
+       -s | --service)
+       CREDENTIAL_SERVICE=$2
+       shift
+       ;;
+##
+##     -t | --type
+##        Credential type to filter by
+       -t | --type)
+       CREDENTIAL_TYPE=$2
+       shift
+       ;;
+##
+##     -n | --no-copy
+##        Dont copy to the clipboard, output to stdout
+       -n | --no-copy)
+       NO_COPY=1
+       ;;
+##
+##     -h | --help
+##        Display this help message
+       -h | --help)
+       egrep --color  '^#[\*#-]+' $0
+       exit 1
+       break
+       ;;
+       *)
+   esac
+   shift # past argument or value
+done
+##
+##----------------------------------------------------------
+## Environment Variables
+##----------------------------------------------------------
+##
+
+
+##
+##   VARYS_HOME
+##     Location of Varys config_dir
+##     defaults `$HOME/.config/varys`
+if [ -z "$VARYS_HOME" ]; then
+  VARYS_HOME="$HOME/.config/varys/"
+fi
+mkdir -p $VARYS_HOME
+
+##
+##   SECRETS_FILE
+##     Location of file to store all the secrets
+##     defaults `$VARYS_HOME/.config/varys/secrets`
+if [ -z "$SECRETS_FILE" ]; then
+  SECRETS_FILE="$VARYS_HOME/secrets"
+fi
+
+##
+##----------------------------------------------------------
+## Actions
+##----------------------------------------------------------
+
+##
+##
+##    List
+##        list out services and types
+function list_action {
+  $SECRETS_FILE | jq -r '.credentials[] | .service +" "+ .type' | sort
+}
+
+##
+##
+##    copy
+##        Copy password to clipboard
+function copy_action {
+  COPY_CMD="xclip -selection clipboard -target text/plain -i"
+  if [ ! -z "$NO_COPY" ]; then
+    COPY_CMD='cat -'
+  fi
+  $SECRETS_FILE | jq -r '.credentials[] | select(.service == "'$CREDENTIAL_SERVICE'" ) | select(.type == "'$CREDENTIAL_TYPE'") | .password' | $COPY_CMD
+}
+
+
+type "$ACTION" 1>/dev/null || exit 1
+
+$ACTION
+
+##----------------------------------------------------------
+############################################################
