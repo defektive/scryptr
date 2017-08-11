@@ -41,6 +41,10 @@
   - `-n vault-name` *required*
   - `-d path/to/dir`
 
+### execute
+
+  execute descrypted pathload with bash
+
 ### extract
 
   extract vault out to make changes

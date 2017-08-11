@@ -90,6 +90,15 @@ function create_action {
 }
 
 ##
+##|### execute
+##x
+##|  execute descrypted pathload with bash
+##x
+function execute_action {
+  cat_action | bash
+}
+
+##
 ##|### extract
 ##x
 ##|  extract vault out to make changes
@@ -194,7 +203,7 @@ ACTION="list_action"
 while [[ $# -gt 0 ]] ; do
   key="$1"
   case $key in
-    cat|list|create|passwd|raw_cat|upgrade|extract|help)
+    cat|list|create|passwd|raw_cat|upgrade|execute|extract|help)
     ACTION="${1}_action"
     ;;
 
