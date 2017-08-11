@@ -1,57 +1,85 @@
-# Varys
-
-
 ```
-############################################################
-##
-##       ██╗   ██╗ █████╗ ██████╗ ██╗   ██╗███████╗
-##       ██║   ██║██╔══██╗██╔══██╗╚██╗ ██╔╝██╔════╝
-##       ██║   ██║███████║██████╔╝ ╚████╔╝ ███████╗
-##       ╚██╗ ██╔╝██╔══██║██╔══██╗  ╚██╔╝  ╚════██║
-##        ╚████╔╝ ██║  ██║██║  ██║   ██║   ███████║
-##         ╚═══╝  ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚══════╝
-##**********************************************************
-##  - Master of secrets
-############################################################
-## Options
-##----------------------------------------------------------
-##
-##     -s | --service
-##        Service Name to filter by
-##
-##     -t | --type
-##        Credential type to filter by
-##
-##     -n | --no-copy
-##        Dont copy to the clipboard, output to stdout
-##
-##     -h | --help
-##        Display this help message
-##
-##----------------------------------------------------------
-## Environment Variables
-##----------------------------------------------------------
-##
-##
-##   VARYS_HOME
-##     Location of Varys config_dir
-##     defaults `$HOME/.config/varys`
-##
-##   SECRETS_FILE
-##     Location of file to store all the secrets
-##     defaults `$VARYS_HOME/.config/varys/secrets`
-##
-##----------------------------------------------------------
+
+       ██╗   ██╗ █████╗ ██████╗ ██╗   ██╗███████╗
+       ██║   ██║██╔══██╗██╔══██╗╚██╗ ██╔╝██╔════╝
+       ██║   ██║███████║██████╔╝ ╚████╔╝ ███████╗
+       ╚██╗ ██╔╝██╔══██║██╔══██╗  ╚██╔╝  ╚════██║
+        ╚████╔╝ ██║  ██║██║  ██║   ██║   ███████║
+         ╚═══╝  ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚══════╝
+                                     - Master of secrets
+```
+-----------------------------------------------------------
+## What is varys?
+
+ Varys is a bash script wrapper around openssl and tar.
+ When you create a vault with Varys, its actually a copy
+ of Varys with an encrypted tarball appended to it.
+
+### Possible Uses
+
+ - Securely store pentest loot
+ - A toolbox that can be uploaded and expanded on remote server
+ - A password manager
+
+### Usage Examples:
+```
+ varys create -d path/to/vault -n ops
+ varys cat -p evilcorp.com/ssh/root
+ varys cat -p storytime/short_story
+ varys cat -p loot/evilcorp.com/shadow
+```
+---------------------------------------------------------
 ## Actions
-##----------------------------------------------------------
-##
-##
-##    List
-##        list out services and types
-##
-##
-##    copy
-##        Copy password to clipboard
-##----------------------------------------------------------
-############################################################
-```
+### cat
+  cat out secret
+
+  - `-p path/to/secret` *required*
+
+### create
+
+  Creates a new vault
+  - `-n vault-name` *required*
+  - `-d path/to/dir`
+
+### extract
+
+  extract vault out to make changes
+
+### list
+   List out the contents of the vault
+
+   *This is the default action*
+
+### passwd
+
+  Change password
+
+### raw_cat
+
+  print out the raw ciphertext, not useful unless you
+  pipe to `openssl`
+
+### upgrade
+
+  upgrade existing varys vault
+
+---------------------------------------------------------
+## Options
+### -d | --dir
+
+  directory to use as vault during creation
+### -h | --help
+
+  Display this help message
+### -n | --name
+
+  name of vault to be created or updated
+### -m | --markdown
+
+  generate markdown (only used on the help action)
+### -p | --path
+
+  Service Name to filter by
+### -R | --remove
+
+  remove directory after creating the vault
