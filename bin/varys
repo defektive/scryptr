@@ -1,111 +1,286 @@
 #! /bin/bash
+set -e
+VARYS_PATH=`realpath $0`
+############################################################
+##x```
+##|
+##|       ██╗   ██╗ █████╗ ██████╗ ██╗   ██╗███████╗
+##|       ██║   ██║██╔══██╗██╔══██╗╚██╗ ██╔╝██╔════╝
+##|       ██║   ██║███████║██████╔╝ ╚████╔╝ ███████╗
+##|       ╚██╗ ██╔╝██╔══██║██╔══██╗  ╚██╔╝  ╚════██║
+##|        ╚████╔╝ ██║  ██║██║  ██║   ██║   ███████║
+##|         ╚═══╝  ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚══════╝
+##|                                     - Master of secrets
+##x```
+##|-----------------------------------------------------------
+##x## What is varys?
+##x
+##x Varys is a bash script wrapper around openssl and tar.
+##x When you create a vault with Varys, its actually a copy
+##x of Varys with an encrypted tarball appended to it.
+##x
+##x### Possible Uses
+##x
+##x - Securely store pentest loot
+##x - A toolbox that can be uploaded and expanded on remote server
+##x - A password manager
+##x
+##|### Usage Examples:
+##x```
+##| varys create -d path/to/vault -n ops
+##| varys cat -p evilcorp.com/ssh/root
+##| varys cat -p storytime/short_story
+##| varys cat -p loot/evilcorp.com/shadow
+##x```
+##|---------------------------------------------------------
+##|## Actions
+##----------------------------------------------------------
 
-############################################################
 ##
-##       ██╗   ██╗ █████╗ ██████╗ ██╗   ██╗███████╗
-##       ██║   ██║██╔══██╗██╔══██╗╚██╗ ██╔╝██╔════╝
-##       ██║   ██║███████║██████╔╝ ╚████╔╝ ███████╗
-##       ╚██╗ ██╔╝██╔══██║██╔══██╗  ╚██╔╝  ╚════██║
-##        ╚████╔╝ ██║  ██║██║  ██║   ██║   ███████║
-##         ╚═══╝  ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚══════╝
-##**********************************************************
-##  - Master of secrets
-############################################################
+##|### cat
+##|  cat out secret
+##x
+##|  - `-p path/to/secret` *required*
+##x
+function cat_action {
+  # COPY_CMD="xclip -selection clipboard -target text/plain -i"
+  # if [ ! -z "$NO_COPY" ]; then
+  #   COPY_CMD='cat -'
+  # fi
+  _cat_decrypted_payload | tar -xzO ./$PATH
+}
+
+##
+##|### create
+##x
+##|  Creates a new vault
+##|  - `-n vault-name` *required*
+##|  - `-d path/to/dir`
+##x
+function create_action {
+
+  if [ -z $VAULT_NAME ]; then
+    echo You must specify a vault name
+    exit 1
+  fi
+
+  NEW_FILE="`pwd`/$VAULT_NAME"
+  _cat_script > $NEW_FILE
+
+  if [ -z $NEW_DIR ]; then
+    mkdir -p new_vault/varys
+    echo 'I am a secret' > new_vault/varys/simple
+    cd new_vault
+    tar -czf - ./ | openssl enc -aes-256-cbc -e  >> $NEW_FILE
+    cd ../
+    rm -rf new_vault
+  elif [ ! -d $NEW_DIR ]; then
+    echo "cant create a vault from nothing"
+    rm $NEW_FILE
+    exit 1
+  else
+    cd "$NEW_DIR"
+    tar -czf - ./ | openssl enc -aes-256-cbc -e  >> $NEW_FILE
+    cd -
+    if [ ! -z $REMOVE_FILES ]; then
+      rm -rf "$NEW_DIR"
+    fi
+  fi
+  chmod +x $NEW_FILE
+}
+
+##
+##|### extract
+##x
+##|  extract vault out to make changes
+##x
+function extract_action {
+  mkdir $0.varys
+  cd $0.varys
+  _cat_decrypted_payload | tar -xz
+}
+
+##
+##|### list
+##|   List out the contents of the vault
+##x
+##|   *This is the default action*
+##x
+function list_action {
+  _cat_decrypted_payload | tar -tz  | sed 's|\./||g'
+}
+
+##
+##|### passwd
+##x
+##|  Change password
+##x
+function passwd_action {
+  _ensure_safe
+  NEW_FILE="$0.update"
+  _cat_script > $NEW_FILE
+  echo "your payload is going to be decrypted and saved to disk :("
+  echo "But it will be deleted right after it is re-encrypted"
+  echo "a trap will be setup to delete the file should anything go wrong"
+  for i in {1..5}; do
+    echo -en "\r Continuing in $((6 - $i)) seconds"
+    sleep 1
+  done
+  echo "Continuing"
+  trap "rm $0.decrypted" SIGINT SIGTERM EXIT
+  echo "trap setup"
+  _cat_decrypted_payload > $0.decrypted
+  echo "Payload decrypted"
+  cat $0.decrypted| openssl enc -aes-256-cbc -e  >> $NEW_FILE
+  echo "Zeroing out decrypted file"
+  dd if=/dev/zero of=$0.decrypted bs=1 count=`stat -c%s $0.decrypted`
+
+  echo "Wrinting random data to decrypted file"
+  dd if=/dev/random of=$0.decrypted bs=1 count=`stat -c%s $0.decrypted`
+  echo "Deleting decrypted payload"
+  rm $0.decrypted
+  echo "Removing trap"
+  trap - SIGINT SIGTERM EXIT
+
+  chmod +x $NEW_FILE
+  mv $NEW_FILE $0
+  echo "Password updated successfully"
+}
+
+##
+##|### raw_cat
+##x
+##|  print out the raw ciphertext, not useful unless you
+##|  pipe to `openssl`
+##x
+function raw_cat_action {
+  _cat_payload
+}
+
+##
+##|### upgrade
+##x
+##|  upgrade existing varys vault
+##x
+function upgrade_action {
+  if [ -z $VAULT_NAME ]; then
+    echo You must specify a vault name
+    exit 1
+  fi
+
+  FILE_TO_UPDATE=`realpath $VAULT_NAME`
+  NEW_FILE=$FILE_TO_UPDATE.upgrade
+  _cat_script > $NEW_FILE
+  $FILE_TO_UPDATE raw_cat >> $NEW_FILE
+  chmod +x $NEW_FILE
+  mv $NEW_FILE $FILE_TO_UPDATE
+}
+
+function help_action {
+
+  if [ -z $MARKDOWN ]; then
+    cat $VARYS_PATH | grep -v "##x" | sed 's/##|[#]\+\?/##/g' | egrep -a --color  '^##[\*#\|-]+?'
+    exit 1
+  fi
+
+  egrep -a '^##[x\|]' bin/varys | sed 's/##[x|]//g'
+}
 
 ACTION="list_action"
-## Options
+##
+##|---------------------------------------------------------
+##|## Options
 ##----------------------------------------------------------
 while [[ $# -gt 0 ]] ; do
-   key="$1"
-   case $key in
-         copy|list)
-         ACTION="${1}_action"
-       ;;
+  key="$1"
+  case $key in
+    cat|list|create|passwd|raw_cat|upgrade|extract|help)
+    ACTION="${1}_action"
+    ;;
+
 ##
-##     -s | --service
-##        Service Name to filter by
-       -s | --service)
-       CREDENTIAL_SERVICE=$2
-       shift
-       ;;
+##|### -d | --dir
+##x
+##|  directory to use as vault during creation
+    -d | --dir)
+    NEW_DIR=$2
+    shift
+    ;;
+
 ##
-##     -t | --type
-##        Credential type to filter by
-       -t | --type)
-       CREDENTIAL_TYPE=$2
-       shift
-       ;;
+##|### -h | --help
+##x
+##|  Display this help message
+    -h | --help)
+    ACTION='help_action'
+    ;;
 ##
-##     -n | --no-copy
-##        Dont copy to the clipboard, output to stdout
-       -n | --no-copy)
-       NO_COPY=1
-       ;;
+##|### -n | --name
+##x
+##|  name of vault to be created or updated
+    -n | --name)
+    VAULT_NAME=$2
+    shift
+    ;;
 ##
-##     -h | --help
-##        Display this help message
-       -h | --help)
-       egrep --color  '^#[\*#-]+' $0
-       exit 1
-       break
-       ;;
-       *)
-   esac
-   shift # past argument or value
+##|### -m | --markdown
+##x
+##|  generate markdown (only used on the help action)
+    -m | --markdown)
+    MARKDOWN=1
+    ;;
+##
+##|### -p | --path
+##x
+##|  Service Name to filter by
+    -p | --path)
+    PATH=$2
+    shift
+    ;;
+##
+##|### -R | --remove
+##x
+##|  remove directory after creating the vault
+    -R | --remove)
+    REMOVE_FILES=1
+    ;;
+    *)
+  esac
+  shift # past argument or value
 done
-##
-##----------------------------------------------------------
-## Environment Variables
-##----------------------------------------------------------
-##
 
+#------
+# private methods
 
-##
-##   VARYS_HOME
-##     Location of Varys config_dir
-##     defaults `$HOME/.config/varys`
-if [ -z "$VARYS_HOME" ]; then
-  VARYS_HOME="$HOME/.config/varys/"
-fi
-mkdir -p $VARYS_HOME
-
-##
-##   SECRETS_FILE
-##     Location of file to store all the secrets
-##     defaults `$VARYS_HOME/.config/varys/secrets`
-if [ -z "$SECRETS_FILE" ]; then
-  SECRETS_FILE="$VARYS_HOME/secrets"
-fi
-
-##
-##----------------------------------------------------------
-## Actions
-##----------------------------------------------------------
-
-##
-##
-##    List
-##        list out services and types
-function list_action {
-  $SECRETS_FILE | jq -r '.credentials[] | .service +" "+ .type' | sort
-}
-
-##
-##
-##    copy
-##        Copy password to clipboard
-function copy_action {
-  COPY_CMD="xclip -selection clipboard -target text/plain -i"
-  if [ ! -z "$NO_COPY" ]; then
-    COPY_CMD='cat -'
+function _ensure_safe {
+  if [ `grep -ac '0xdef''ec7' $VARYS_PATH` -gt 0 ] ; then
+    echo refusing to run on main varys file
+    exit 1
   fi
-  $SECRETS_FILE | jq -r '.credentials[] | select(.service == "'$CREDENTIAL_SERVICE'" ) | select(.type == "'$CREDENTIAL_TYPE'") | .password' | $COPY_CMD
 }
 
+function _marker_line {
+  grep -an '#0xdead''beef' $VARYS_PATH | cut -d: -f 1
+}
+
+function _cat_script {
+  head -n`_marker_line` $VARYS_PATH
+}
+
+function _cat_payload {
+  tail -n +$((`_marker_line` + 1)) $VARYS_PATH
+}
+
+function _cat_decrypted_payload {
+  tail -n +$((`_marker_line` + 1)) $VARYS_PATH | openssl enc -aes-256-cbc -d
+}
 
 type "$ACTION" 1>/dev/null || exit 1
 
 $ACTION
 
+exit
 ##----------------------------------------------------------
 ############################################################
+#0xdeadbeef
+0xdefec7
