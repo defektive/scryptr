@@ -47,7 +47,7 @@ function cat_action {
   # if [ ! -z "$NO_COPY" ]; then
   #   COPY_CMD='cat -'
   # fi
-  _cat_decrypted_payload | tar -xzO ./$PATH
+  _cat_decrypted_payload | tar -xzO ./$PATH_SELECTOR
 }
 
 ##
@@ -234,7 +234,7 @@ while [[ $# -gt 0 ]] ; do
 ##x
 ##|  Service Name to filter by
     -p | --path)
-    PATH=$2
+    PATH_SELECTOR=$2
     shift
     ;;
 ##
