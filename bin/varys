@@ -186,13 +186,14 @@ function upgrade_action {
 }
 
 function help_action {
-
+  echo help $VARYS_PATH
   if [ -z $MARKDOWN ]; then
-    cat $VARYS_PATH | grep -v "##x" | sed 's/##|[#]\+\?/##/g' | egrep -a --color  '^##[\*#\|-]+?'
+    _cat_script | grep -v "##x" | sed 's/##|[#]\+\?/##/g' | egrep -a --color  '^##[\*#\|-]+?'
     exit 1
   fi
 
-  egrep -a '^##[x\|]' bin/varys | sed 's/##[x|]//g'
+  _cat_script | egrep -a '^##[x\|]' | sed 's/##[x|]//g'
+  exit 1
 }
 
 ACTION="list_action"
@@ -222,6 +223,7 @@ while [[ $# -gt 0 ]] ; do
 ##|  Display this help message
     -h | --help)
     ACTION='help_action'
+    break
     ;;
 ##
 ##|### -n | --name
