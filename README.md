@@ -32,9 +32,9 @@
 ### Usage Examples:
 ```
  scryptr create -d path/to/vault -n ops
- scryptr cat -p evilcorp.com/ssh/root
  scryptr cat -p storytime/short_story
- scryptr cat -p loot/evilcorp.com/shadow
+ scryptr cat -c -p loot/evilcorp.com/root_passwd
+ scryptr execute -p bin/start-vpn
 ```
 --------------------------------------------------------------------------------------------------
 ## Actions
