@@ -1,0 +1,9 @@
+#! /bin/bash
+
+echo $SCRYPTR_KEY
+
+ip=`_get_val credentials/secretplace/ip`
+username=`_get_val credentials/secretplace/username`
+password=`_get_val credentials/secretplace/password`
+
+echo "Connect to $username@$ip with $password"

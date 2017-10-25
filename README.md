@@ -56,7 +56,8 @@
 
 ### execute
 
-  execute descrypted pathload with bash
+  execute descrypted pathload with bash, only do this to things you create or trust
+  can be used to access all your secrets
 
 ### extract
 

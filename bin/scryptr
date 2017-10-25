@@ -74,8 +74,7 @@ function cat_action {
   if [ ! -z $CLIPBOARD ]; then
     COPY_CMD="xclip -selection clipboard -target text/plain -i"
   fi
-  _unlock_key
-  _cat_payload | tar -xzO ./$PATH_SELECTOR | openssl enc -md sha256 -aes-256-cbc -d -pass env:SCRYPTR_KEY | $COPY_CMD
+  _get_val $PATH_SELECTOR | $COPY_CMD
 }
 
 ##
@@ -127,10 +126,12 @@ function create_action {
 ##
 ##|### execute
 ##x
-##|  execute descrypted pathload with bash
+##|  execute descrypted pathload with bash, only do this to things you create or trust
+##|  can be used to access all your secrets
 ##x
 function execute_action {
-  cat_action | bash
+  _unlock_key
+  eval "$(cat_action)"
 }
 
 ##
@@ -302,7 +303,8 @@ function _cat_payload {
 }
 
 function _get_val {
-  _cat_payload | tar -xzO ./$1 | openssl enc -md sha256 -aes-256-cbc -d
+  _unlock_key
+  _cat_payload | tar -xzO ./$1 | openssl enc -md sha256 -aes-256-cbc -d -pass env:SCRYPTR_KEY
 }
 
 function _generate_new_key {
@@ -311,7 +313,7 @@ function _generate_new_key {
 
 function _unlock_key {
   if [ -z $SCRYPTR_KEY ]; then
-    export SCRYPTR_KEY=`_get_val .master-key`
+    export SCRYPTR_KEY=`_cat_payload | tar -xzO ./.master-key | openssl enc -md sha256 -aes-256-cbc -d`
   fi
 }
 

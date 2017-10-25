@@ -1,6 +1,7 @@
 
 .master-key
 bin/
+bin/test
 bin/meow
 credentials/
 credentials/github-password

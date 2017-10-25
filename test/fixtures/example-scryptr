@@ -74,8 +74,7 @@ function cat_action {
   if [ ! -z $CLIPBOARD ]; then
     COPY_CMD="xclip -selection clipboard -target text/plain -i"
   fi
-  _unlock_key
-  _cat_payload | tar -xzO ./$PATH_SELECTOR | openssl enc -md sha256 -aes-256-cbc -d -pass env:SCRYPTR_KEY | $COPY_CMD
+  _get_val $PATH_SELECTOR | $COPY_CMD
 }
 
 ##
@@ -127,10 +126,12 @@ function create_action {
 ##
 ##|### execute
 ##x
-##|  execute descrypted pathload with bash
+##|  execute descrypted pathload with bash, only do this to things you create or trust
+##|  can be used to access all your secrets
 ##x
 function execute_action {
-  cat_action | bash
+  _unlock_key
+  eval "$(cat_action)"
 }
 
 ##
@@ -302,7 +303,8 @@ function _cat_payload {
 }
 
 function _get_val {
-  _cat_payload | tar -xzO ./$1 | openssl enc -md sha256 -aes-256-cbc -d
+  _unlock_key
+  _cat_payload | tar -xzO ./$1 | openssl enc -md sha256 -aes-256-cbc -d -pass env:SCRYPTR_KEY
 }
 
 function _generate_new_key {
@@ -311,7 +313,7 @@ function _generate_new_key {
 
 function _unlock_key {
   if [ -z $SCRYPTR_KEY ]; then
-    export SCRYPTR_KEY=`_get_val .master-key`
+    export SCRYPTR_KEY=`_cat_payload | tar -xzO ./.master-key | openssl enc -md sha256 -aes-256-cbc -d`
   fi
 }
 
@@ -338,6 +340,8 @@ exit
 ##--------------------------------------------------------------------------------------------------
 ####################################################################################################
 #0xdeadbeef
-‹ gâðY ÓÓg 90 sSS† ;‘'WBÇ9  ƒ¡±¡¹‰¡™¡¡±)ƒ¡‘©!ƒ‚)íÆÀPZ\’X¤ À”‘_T”Ÿœ]ŒC]J~nbfžBiqj.%Cèéëå&—¤éf§VÒÈP›™˜àŒ#¤ø71Æ¿‰©™ƒ‚ÜƒFxü'æ”¤¦ÄÇ7Þ¹õùJ\ÌUóÕ3î”˜¿ÜÙ¤¯"|pmE6û¬ºüùiñùRMißÂÞéîºWÃçòzoíï35$N[ú:=:ÿð²?»ƒOæß¯]š{íŒDŸXMšÀÙØtåØ+í/åîq:åÊêßÍÛN¾ß¸øÎùÂ[.Ýà#!Ã³Æ_(ð†÷±»ý?vJÖÊ÷Û9‡~)dš~ðwºk¨eÇ@‡ÏpzúI™y4®H/ÿLGËº Hüç¦æ—ÓÎBå¿!rü›€âßÄÐØx´ü§€•ÿå¹õ³çô¼Ðëtë|Î©½·ã,–ur,4–Ò´»4e*ÛQñ%³ì6OH‘Ø/ºâë™y>—gE>h÷Ê€ž~rQjJj^IfbN1êÒËss³ÑòŸ 5þÓ3K2J“t‹‹Ëó‹R¨d¡òßÀ­ü720 v	FË: Xù¿vMÄÊúf;i§ç=ÒA…Á!/?Y—>^è­&ãûyí”«"óýVJ½ª«h÷ŽêÔü_œ
-ä•ä$&§R±. ½ü7727-ÿépÇ?õ*ÒËCÓÑñº Xù_ðïéœ>ç£U—ýÞ7M}ñ÷åþU|ÿ<¥'­ð6·0ö”ÚÎžã¤ü„vï( .ÀÿA)=/17•r;æÌüod:šÿé`ùÙÇYŸü-'w}¸®ýNGós°èÿ—Ú}£€¶ wþÏ, –$çCs3C³ÑüO Ëÿ?ïØ©D?XñÉèâÅ‹»¶]®¤"à®5Ðî£`Œ‚Q0
-FÁ(Ô 3Âc (  
+‹ ¨øðY ÓÓg 90 sSS† ;‘'WBÇ9  ƒ¡±¡¹	™˜2™˜3(˜ÒÞi¥Å%‰E
+
+IùEEùÉÙÅ8Ô¥äç&fæ)”§áR2ž¾^nbqIj‘nvj%ì E°™‰	Îø72AŠS`ü›˜š2(ÐÈ=(`„ÇpbNIjJ|¼å:G9VÓíIÓOïš^{>YQèØ½í®‹´"Î”ûpÚùNIÁv9žrS»õÖù}?ìð§øÃDÅ]ÜSýM{n>¸gi¿#%*©ÿdbÆÅ|—ò™Ý?§.l<þ&çìãJÞÀmå³ßM¾Ò|R©@Æä¿°²Ëÿ†3%¦Îìs~Ò|_9îîCû…’»6\bVüôGKñç^®½:„Z:|†;ÐÓOÊÌ£q@zùold:ZþÓ@â¿$µ¸„vv*ÿM0âßÄÐÔx´ü§€•ÿs´¯ô–6Nœk¡b|T­¯l•Éé4öø™ÁâõE“:N}]¡¸qÀžæ–­sNIªÿætñ¾j¶@•Úƒ}.·tµÿ+W_×5pxÝ¥Z­ÃQÅ×ÜÉ¿m¡s‡M§‘Ü­«ö¹UIú±¬»ŸÍ?÷‹Ã06B)Éªà±KêôMÌÜ×8©*²¯²”Ú&ºá¶ô;‹üÈHeí¾e×ëÑÚ§Ì²ûÏÔƒbwòe”)ÈJúÅ|úi×,ùóÁªžŒÌ«Î=ÛÍ£Ä'z{Ù[µ‰¢?èÛüYÖrr­›Q¸=çÁÍ½öÇË™Ÿ¼©×~³’'¾†uWä.wýÒ3Ë«ítø4€äÿÜÔürÚÙA(ÿbÉÿÀ&áhþ§€åÿ®íF[®¿õhP‹2¨œ\]´pÒ½Þ¬Ÿo÷tÞ)áùfb¶øBQ%·”iÀ·Å‹¬}^ú¶gjù‘vÿ( èé'¥¦¤æ•d&æÓ¨HzûÏØ(mÿÑ ÆzfIFi’nAbqqy~Q
+•ì Tþ˜¡Å¿0úMGËz Xùïs Kg‚ŒzÁûçÊ‹1_hú¦ZÓ›×ëä-×V™‡–±‡ÛN•ýÚ;ÐîÔ¨ù¿8È+)ÈILN¥b]@zùondn6ZþÓàŽêU¤—ÿ† ñŸÑòŸö Vþ‹	5×¾™é}&9»ãéç7çLìî¶DvŸ¿iù¯~GúyËeÍÉ²—è0[4
+è	pçPJÏKÌM¥Ü‚ùß3ÿæz Xþ7JÜÑšÿÚàËÃyŸÜôzæ¯ë3ÈYp]ÊçÞ@»oÐàÎÿ™Ô²ƒäüohnf4:þO Ëÿož^â¹x`§åq&Ï‰vÏÞ°©ˆÌÙ:Ðî£`Œ‚Q@  ,z¹/ (  
