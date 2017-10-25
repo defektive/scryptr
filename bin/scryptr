@@ -1,5 +1,4 @@
 #! /bin/bash
-# version: 1.0
 set -e
 SCRYPTR_PATH=`realpath $0`
 ####################################################################################################
@@ -19,6 +18,7 @@ SCRYPTR_PATH=`realpath $0`
 ##|                                                  98"      *8E
 ##|                                                ./"        '8>
 ##|                                               ~`           "
+##| version: 1.0.1
 ##x```
 ##|--------------------------------------------------------------------------------------------------
 ##x## What is scryptr?
@@ -46,7 +46,7 @@ SCRYPTR_PATH=`realpath $0`
 
 ##
 ##|### add
-##|  add a new secret
+##|  add a new secret. you will be prompted for what you want stored
 ##x
 ##|  - `-p path/to/secret` *required*
 ##x
@@ -99,21 +99,27 @@ function create_action {
     sleep 2
   fi
 
-  if [ -d $NEW_DIR ]; then
+  echo "[+] Creating new decryption key"
+  export NEW_KEY=`_generate_new_key`
+
+  if [ ! -z $NEW_DIR ] && [ -d $NEW_DIR ]; then
+    echo "[+] Encrypting files in $NEW_DIR"
     cd $NEW_DIR
-    echo "[+] Creating new decryption key"
-    export NEW_KEY=`_generate_new_key`
-    find . -type f -exec sh -c 'd=`dirname "{}"`; f=`basename "{}"`; mkdir -p "'$NEW_DIR.scryptr'/$d"; echo "[*] encrypting {}"; openssl enc -md sha256 -aes-256-cbc -e -in "{}" -out "'$NEW_DIR.scryptr'/$d/$f" -pass env:NEW_KEY' \;
+    find . -type f -exec sh -c 'd=`dirname "{}"`; f=`basename "{}"`; mkdir -p "'$NEW_FILE.scryptr'/$d"; echo "[*] encrypting {}"; openssl enc -md sha256 -aes-256-cbc -e -in "{}" -out "'$NEW_FILE.scryptr'/$d/$f" -pass env:NEW_KEY' \;
     cd -
-    _save_key $NEW_KEY "$NEW_DIR.scryptr/.master-key"
-    unset NEW_KEY
+  fi
 
-    _bundle "$NEW_DIR.scryptr" "$NEW_FILE"
+  echo "[+] Encrypting key"
+  mkdir -p "$NEW_FILE.scryptr"
+  _save_key $NEW_KEY "$NEW_FILE.scryptr/.master-key"
+  unset NEW_KEY
 
+  _bundle "$NEW_FILE.scryptr" "$NEW_FILE"
+
+  if [ -d $NEW_DIR ]; then
     if [ ! -z $REMOVE_FILES ]; then
       rm -rf "$NEW_DIR"
     fi
-
   fi
   chmod +x $NEW_FILE
 }

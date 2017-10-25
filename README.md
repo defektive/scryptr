@@ -14,6 +14,7 @@
                                                   98"      *8E
                                                 ./"        '8>
                                                ~`           "
+ version: 1.0.1
 ```
 --------------------------------------------------------------------------------------------------
 ## What is scryptr?
@@ -38,7 +39,7 @@
 --------------------------------------------------------------------------------------------------
 ## Actions
 ### add
-  add a new secret
+  add a new secret. you will be prompted for what you want stored
 
   - `-p path/to/secret` *required*
 
