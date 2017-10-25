@@ -1,19 +1,26 @@
 ```
-
-       ██╗   ██╗ █████╗ ██████╗ ██╗   ██╗███████╗
-       ██║   ██║██╔══██╗██╔══██╗╚██╗ ██╔╝██╔════╝
-       ██║   ██║███████║██████╔╝ ╚████╔╝ ███████╗
-       ╚██╗ ██╔╝██╔══██║██╔══██╗  ╚██╔╝  ╚════██║
-        ╚████╔╝ ██║  ██║██║  ██║   ██║   ███████║
-         ╚═══╝  ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚══════╝
-                                     - Master of secrets
+        ...                                                                s
+    .x888888hx    :                          ..                           :8
+   d88888888888hxx               .u    .    @L           .d``            .88       .u    .
+  8" ... `"*8888%`        .    .d88B :@8c  9888i   .dL   @8Ne.   .u     :888ooo  .d88B :@8c
+ !  "   ` .xnxx.     .udR88N  ="8888f8888r `Y888k:*888.  %8888:u@88N  -*8888888 ="8888f8888r
+ X X   .H8888888%:  <888'888k   4888>'88"    888E  888I   `888I  888.   8888      4888>'88"
+ X 'hn8888888*"   > 9888 'Y"    4888> '      888E  888I    888I  888I   8888      4888> '
+ X: `*88888%`     ! 9888        4888>        888E  888I    888I  888I   8888      4888>
+ '8h.. ``     ..x8> 9888       .d888L .+     888E  888I  uW888L  888'  .8888Lu=  .d888L .+
+  `88888888888888f  ?8888u../  ^"8888*"     x888N><888' '*88888Nu88P   ^%888*    ^"8888*"
+   '%8888888888*"    "8888P'      "Y"        "88"  888  ~ '88888F`       'Y"        "Y"
+      ^"****""`        "P'                         88F     888 ^
+                                                  98"      *8E
+                                                ./"        '8>
+                                               ~`           "
 ```
------------------------------------------------------------
-## What is varys?
+--------------------------------------------------------------------------------------------------
+## What is scryptr?
 
- Varys is a bash script wrapper around openssl and tar.
- When you create a vault with Varys, its actually a copy
- of Varys with an encrypted tarball appended to it.
+ Scryptr is a bash script wrapper around openssl and tar.
+ When you create a vault with Scryptr, its actually a copy
+ of Scryptr with a tarball appended to it. Scryptr
 
 ### Possible Uses
 
@@ -23,13 +30,18 @@
 
 ### Usage Examples:
 ```
- varys create -d path/to/vault -n ops
- varys cat -p evilcorp.com/ssh/root
- varys cat -p storytime/short_story
- varys cat -p loot/evilcorp.com/shadow
+ scryptr create -d path/to/vault -n ops
+ scryptr cat -p evilcorp.com/ssh/root
+ scryptr cat -p storytime/short_story
+ scryptr cat -p loot/evilcorp.com/shadow
 ```
----------------------------------------------------------
+--------------------------------------------------------------------------------------------------
 ## Actions
+### add
+  add a new secret
+
+  - `-p path/to/secret` *required*
+
 ### cat
   cat out secret
 
@@ -65,10 +77,13 @@
 
 ### upgrade
 
-  upgrade existing varys vault
+  upgrade existing scryptr vault
 
----------------------------------------------------------
+--------------------------------------------------------------------------------------------------
 ## Options
+### -c | --copy
+
+  copy output to clipboard
 ### -d | --dir
 
   directory to use as vault during creation

@@ -1,0 +1,335 @@
+#! /bin/bash
+# version: 1.0
+set -e
+SCRYPTR_PATH=`realpath $0`
+####################################################################################################
+##x```
+##|        ...                                                                s
+##|    .x888888hx    :                          ..                           :8
+##|   d88888888888hxx               .u    .    @L           .d``            .88       .u    .
+##|  8" ... `"*8888%`        .    .d88B :@8c  9888i   .dL   @8Ne.   .u     :888ooo  .d88B :@8c
+##| !  "   ` .xnxx.     .udR88N  ="8888f8888r `Y888k:*888.  %8888:u@88N  -*8888888 ="8888f8888r
+##| X X   .H8888888%:  <888'888k   4888>'88"    888E  888I   `888I  888.   8888      4888>'88"
+##| X 'hn8888888*"   > 9888 'Y"    4888> '      888E  888I    888I  888I   8888      4888> '
+##| X: `*88888%`     ! 9888        4888>        888E  888I    888I  888I   8888      4888>
+##| '8h.. ``     ..x8> 9888       .d888L .+     888E  888I  uW888L  888'  .8888Lu=  .d888L .+
+##|  `88888888888888f  ?8888u../  ^"8888*"     x888N><888' '*88888Nu88P   ^%888*    ^"8888*"
+##|   '%8888888888*"    "8888P'      "Y"        "88"  888  ~ '88888F`       'Y"        "Y"
+##|      ^"****""`        "P'                         88F     888 ^
+##|                                                  98"      *8E
+##|                                                ./"        '8>
+##|                                               ~`           "
+##x```
+##|--------------------------------------------------------------------------------------------------
+##x## What is scryptr?
+##x
+##x Scryptr is a bash script wrapper around openssl and tar.
+##x When you create a vault with Scryptr, its actually a copy
+##x of Scryptr with a tarball appended to it. Scryptr
+##x
+##x### Possible Uses
+##x
+##x - Securely store pentest loot
+##x - A toolbox that can be uploaded and expanded on remote server
+##x - A password manager
+##x
+##|### Usage Examples:
+##x```
+##| scryptr create -d path/to/vault -n ops
+##| scryptr cat -p evilcorp.com/ssh/root
+##| scryptr cat -p storytime/short_story
+##| scryptr cat -p loot/evilcorp.com/shadow
+##x```
+##|--------------------------------------------------------------------------------------------------
+##|## Actions
+##--------------------------------------------------------------------------------------------------
+
+##
+##|### add
+##|  add a new secret
+##x
+##|  - `-p path/to/secret` *required*
+##x
+function add_action {
+  extract_action
+  cd $0.scryptr
+  _unlock_key
+  echo -n "what do you want to store? "
+  read secret
+  mkdir -p `dirname $PATH_SELECTOR`
+  echo $secret | openssl enc -md sha256 -aes-256-cbc -e -pass env:SCRYPTR_KEY > $PATH_SELECTOR
+  cd -
+  _bundle "$0.scryptr" "$SCRYPTR_PATH.new"
+  mv "$SCRYPTR_PATH.new" "$SCRYPTR_PATH"
+}
+
+##
+##|### cat
+##|  cat out secret
+##x
+##|  - `-p path/to/secret` *required*
+##x
+function cat_action {
+  COPY_CMD="cat -"
+  if [ ! -z $CLIPBOARD ]; then
+    COPY_CMD="xclip -selection clipboard -target text/plain -i"
+  fi
+  _unlock_key
+  _cat_payload | tar -xzO ./$PATH_SELECTOR | openssl enc -md sha256 -aes-256-cbc -d -pass env:SCRYPTR_KEY | $COPY_CMD
+}
+
+##
+##|### create
+##x
+##|  Creates a new vault
+##|  - `-n vault-name` *required*
+##|  - `-d path/to/dir`
+##x
+function create_action {
+
+  if [ -z $VAULT_NAME ]; then
+    echo You must specify a vault name
+    exit 1
+  fi
+
+  NEW_FILE="`pwd`/$VAULT_NAME"
+
+  if [ -f "$NEW_FILE" ]; then
+    echo "[!] Overwriting $NEW_FILE"
+    sleep 2
+  fi
+
+  if [ -d $NEW_DIR ]; then
+    cd $NEW_DIR
+    echo "[+] Creating new decryption key"
+    export NEW_KEY=`_generate_new_key`
+    find . -type f -exec sh -c 'd=`dirname "{}"`; f=`basename "{}"`; mkdir -p "'$NEW_DIR.scryptr'/$d"; echo "[*] encrypting {}"; openssl enc -md sha256 -aes-256-cbc -e -in "{}" -out "'$NEW_DIR.scryptr'/$d/$f" -pass env:NEW_KEY' \;
+    cd -
+    _save_key $NEW_KEY "$NEW_DIR.scryptr/.master-key"
+    unset NEW_KEY
+
+    _bundle "$NEW_DIR.scryptr" "$NEW_FILE"
+
+    if [ ! -z $REMOVE_FILES ]; then
+      rm -rf "$NEW_DIR"
+    fi
+
+  fi
+  chmod +x $NEW_FILE
+}
+
+##
+##|### execute
+##x
+##|  execute descrypted pathload with bash
+##x
+function execute_action {
+  cat_action | bash
+}
+
+##
+##|### extract
+##x
+##|  extract vault out to make changes
+##x
+function extract_action {
+  mkdir $0.scryptr
+  cd $0.scryptr
+  _cat_payload | tar -xz
+  cd -
+}
+
+##
+##|### list
+##|   List out the contents of the vault
+##x
+##|   *This is the default action*
+##x
+function list_action {
+  _cat_payload | tar -tz  | sed 's|\./||g'
+}
+
+##
+##|### passwd
+##x
+##|  Change password
+##x
+function passwd_action {
+  _ensure_safe
+  extract_action
+  _unlock_key
+  _save_key $SCRYPTR_KEY "$0.scryptr/.master-key"
+  _bundle "$0.scryptr" "$SCRYPTR_PATH.new"
+  mv "$SCRYPTR_PATH.new" "$SCRYPTR_PATH"
+}
+
+##
+##|### raw_cat
+##x
+##|  print out the raw ciphertext, not useful unless you
+##|  pipe to `openssl`
+##x
+function raw_cat_action {
+  _cat_payload
+}
+
+##
+##|### upgrade
+##x
+##|  upgrade existing scryptr vault
+##x
+function upgrade_action {
+  if [ -z $VAULT_NAME ]; then
+    echo You must specify a vault name
+    exit 1
+  fi
+
+  FILE_TO_UPDATE=`realpath $VAULT_NAME`
+  NEW_FILE=$FILE_TO_UPDATE.upgrade
+  _cat_script > $NEW_FILE
+  $FILE_TO_UPDATE raw_cat >> $NEW_FILE
+  chmod +x $NEW_FILE
+  mv $NEW_FILE $FILE_TO_UPDATE
+}
+
+function help_action {
+  if [ -z $MARKDOWN ]; then
+    _cat_script | grep -v "##x" | sed 's/##|[#]\+\?/##/g' | egrep -a --color  '^##[\*#\|-]+?'
+    exit 1
+  fi
+
+  _cat_script | egrep -a '^##[x\|]' | sed 's/##[x|]//g'
+  exit 1
+}
+
+ACTION="list_action"
+##
+##|--------------------------------------------------------------------------------------------------
+##|## Options
+##--------------------------------------------------------------------------------------------------
+while [[ $# -gt 0 ]] ; do
+  key="$1"
+  case $key in
+    add|cat|list|create|passwd|raw_cat|upgrade|execute|extract|help)
+    ACTION="${1}_action"
+    ;;
+
+##
+##|### -c | --copy
+##x
+##|  copy output to clipboard
+    -c | --copy)
+    CLIPBOARD=1
+    ;;
+##
+##|### -d | --dir
+##x
+##|  directory to use as vault during creation
+    -d | --dir)
+    NEW_DIR=`realpath "$2"`
+    shift
+    ;;
+
+##
+##|### -h | --help
+##x
+##|  Display this help message
+    -h | --help)
+    ACTION='help_action'
+    break
+    ;;
+##
+##|### -n | --name
+##x
+##|  name of vault to be created or updated
+    -n | --name)
+    VAULT_NAME=$2
+    shift
+    ;;
+##
+##|### -m | --markdown
+##x
+##|  generate markdown (only used on the help action)
+    -m | --markdown)
+    MARKDOWN=1
+    ;;
+##
+##|### -p | --path
+##x
+##|  Service Name to filter by
+    -p | --path)
+    PATH_SELECTOR=$2
+    shift
+    ;;
+##
+##|### -R | --remove
+##x
+##|  remove directory after creating the vault
+    -R | --remove)
+    REMOVE_FILES=1
+    ;;
+    *)
+  esac
+  shift # past argument or value
+done
+
+#------
+# private methods
+
+function _ensure_safe {
+  if [ `grep -ac '0xdef''ec7' $SCRYPTR_PATH` -gt 0 ] ; then
+    echo refusing to run on main scryptr file
+    exit 1
+  fi
+}
+
+function _marker_line {
+  grep -an '#0xdead''beef' $SCRYPTR_PATH | cut -d: -f 1
+}
+
+function _cat_script {
+  head -n`_marker_line` $SCRYPTR_PATH
+}
+
+function _cat_payload {
+  tail -n +$((`_marker_line` + 1)) $SCRYPTR_PATH
+}
+
+function _get_val {
+  _cat_payload | tar -xzO ./$1 | openssl enc -md sha256 -aes-256-cbc -d
+}
+
+function _generate_new_key {
+  openssl rand 2048 | sha512sum | awk '{print $1}'
+}
+
+function _unlock_key {
+  if [ -z $SCRYPTR_KEY ]; then
+    export SCRYPTR_KEY=`_get_val .master-key`
+  fi
+}
+
+function _save_key {
+  echo -n $1 | openssl enc -md sha256 -aes-256-cbc -e > $2
+}
+
+function _bundle {
+  _cat_script > $2
+  cd "$1"
+  tar -czvf "$2.tgz" ./
+  cd -
+  cat "$2.tgz" >> "$2"
+  rm "$2.tgz"
+  rm -rf "$1"
+  chmod +x $2
+}
+
+type "$ACTION" 2>&1 1>/dev/null || exit 1
+
+$ACTION
+
+exit
+##--------------------------------------------------------------------------------------------------
+####################################################################################################
+#0xdeadbeef
+0xdefec7

@@ -1,0 +1,10 @@
+
+.master-key
+bin/
+bin/meow
+credentials/
+credentials/github-password
+credentials/secretplace/
+credentials/secretplace/password
+credentials/secretplace/username
+credentials/secretplace/ip
