@@ -47,6 +47,7 @@
   cat out secret
 
   - `-p path/to/secret` *required*
+  - `-c` copy to clipboard
 
 ### create
 

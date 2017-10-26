@@ -68,6 +68,7 @@ function add_action {
 ##|  cat out secret
 ##x
 ##|  - `-p path/to/secret` *required*
+##|  - `-c` copy to clipboard
 ##x
 function cat_action {
   COPY_CMD="cat -"
