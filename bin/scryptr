@@ -57,6 +57,7 @@ function add_action {
   echo -n "what do you want to store? "
   read secret
   mkdir -p `dirname $PATH_SELECTOR`
+  echo saving $secret
   echo $secret | openssl enc -md sha256 -aes-256-cbc -e -pass env:SCRYPTR_KEY > $PATH_SELECTOR
   cd -
   _bundle "$0.scryptr" "$SCRYPTR_PATH.new"
@@ -154,7 +155,7 @@ function extract_action {
 ##|   *This is the default action*
 ##x
 function list_action {
-  _cat_payload | tar -tz  | sed 's|\./||g'
+  _cat_payload | tar -tz | grep -v './.master-key' | sort | sed 's|\./||g'
 }
 
 ##
