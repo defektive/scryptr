@@ -155,7 +155,7 @@ function extract_action {
 ##|   *This is the default action*
 ##x
 function list_action {
-  _cat_payload | tar -tz | grep -v './.master-key' | sort | sed 's|\./||g'
+  _cat_payload | tar -tz | grep -v './.master-key' | egrep -v '/$' | sort | sed 's|\./||g'
 }
 
 ##
